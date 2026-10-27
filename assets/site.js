@@ -25,3 +25,13 @@ if(!('IntersectionObserver' in window)){els.forEach(function(e){e.classList.add(
 var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){e.target.classList.add('in');e.target.querySelectorAll('[data-to]').forEach(count);e.target.querySelectorAll('.pstrip').forEach(function(p){p.classList.add('in')});io.unobserve(e.target)}})},{threshold:.12,rootMargin:'0px 0px -5% 0px'});
 els.forEach(function(el){io.observe(el)});
 })();
+(function(){var d=document,a=d.querySelector('[data-form]'),p=d.getElementById('cf'),pc,f;if(!a||!p)return;
+var U='https://api.leadconnectorhq.com/widget/form/eVb1O6MEIsLGy9wOXSXe',ID='inline-eVb1O6MEIsLGy9wOXSXe';
+function warm(){if(pc)return;pc=1;['https://api.leadconnectorhq.com','https://link.msgsndr.com'].forEach(function(u){var l=d.createElement('link');l.rel='preconnect';l.href=u;d.head.appendChild(l)})}
+a.addEventListener('pointerenter',warm);a.addEventListener('focus',warm);
+a.addEventListener('click',function(e){if(e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button)return;e.preventDefault();
+var o=a.getAttribute('aria-expanded')!=='true';a.setAttribute('aria-expanded',o);a.textContent=o?'Hide the contact form':'Open the contact form';
+if(o){p.hidden=false;if(!f){f=d.createElement('iframe');f.id=ID;f.src=U;f.title='Contact form for Merrick Lee';f.setAttribute('data-form-id','eVb1O6MEIsLGy9wOXSXe');f.onload=function(){p.classList.add('ok')};p.querySelector('.cf-in').appendChild(f);
+var s=d.createElement('script');s.src='https://link.msgsndr.com/js/form_embed.js';s.async=true;d.body.appendChild(s)}
+requestAnimationFrame(function(){requestAnimationFrame(function(){p.classList.add('open')})})}
+else{p.classList.remove('open');setTimeout(function(){if(!p.classList.contains('open'))p.hidden=true},matchMedia('(prefers-reduced-motion: reduce)').matches?0:400)}})})();
