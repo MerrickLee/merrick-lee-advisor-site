@@ -1,3 +1,14 @@
+(function(){var d=document,U='https://api.leadconnectorhq.com/widget/bookings/strategy-call-merrick',dl,tr,pc,h=d.documentElement;
+function warm(){if(pc)return;pc=1;var l=d.createElement('link');l.rel='preconnect';l.href='https://api.leadconnectorhq.com';d.head.appendChild(l)}
+function open(a){tr=a;if(!dl){dl=d.createElement('dialog');dl.className='bk';dl.setAttribute('aria-labelledby','bk-h');
+dl.innerHTML='<div class="bk-hd"><h2 id="bk-h">Book a strategy call</h2><button type="button" class="bk-x" aria-label="Close booking calendar">&times;</button></div><div class="bk-bd"><p class="bk-ld" role="status">Loading calendar&hellip;</p></div>';
+d.body.appendChild(dl);dl.querySelector('.bk-x').onclick=function(){dl.close()};
+dl.addEventListener('click',function(e){if(e.target===dl)dl.close()});
+dl.addEventListener('close',function(){h.classList.remove('bk-lock');tr&&tr.focus()});
+var f=d.createElement('iframe');f.title='Booking calendar for a strategy call with Merrick Lee';f.onload=function(){dl.classList.add('ok')};f.src=U;dl.querySelector('.bk-bd').appendChild(f)}
+h.classList.add('bk-lock');dl.showModal()}
+d.querySelectorAll('[data-book]').forEach(function(a){a.addEventListener('pointerenter',warm);a.addEventListener('focus',warm);
+a.addEventListener('click',function(e){if(!window.HTMLDialogElement||e.ctrlKey||e.metaKey||e.shiftKey||e.altKey||e.button)return;e.preventDefault();open(a)})})})();
 (function(){
 var d=document,r=matchMedia('(prefers-reduced-motion: reduce)').matches;
 /* mobile menu */
