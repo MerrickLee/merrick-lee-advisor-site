@@ -55,3 +55,22 @@ What the script does:
 - Writes Article, BreadcrumbList and (when there's an faq) FAQPage JSON-LD, plus canonical, OG and Twitter tags.
 - Regenerates the listing cards (newest first), the Blog JSON-LD and the "Related insights" block on every post. That block appears once there are two or more posts.
 - Adds the URL to `sitemap.xml` if that file exists. Otherwise it skips this step.
+
+### Photo credits (Unsplash, Pexels and other sources)
+
+You can use your own photos or free stock photos. Download the file, point the draft at it, and add the credit:
+
+```yaml
+hero: ./photos/unsplash-city-street.jpg
+hero_alt: Busy street in Midtown Manhattan at dusk
+hero_credit: Jane Doe
+hero_credit_url: https://unsplash.com/@janedoe
+hero_source: unsplash          # unsplash or pexels (optional)
+images:                         # credits for inline images, matched by src
+  - src: ./photos/pexels-laptop.jpg
+    credit: John Roe
+    credit_url: https://www.pexels.com/@johnroe
+    source: pexels
+```
+
+Credited images get a small caption such as "Photo: Jane Doe on Unsplash". The links use `rel="noopener"`. The photo-reuse warning compares each image's file hash and stock credit URL against existing posts, so a stock photo still gets caught after it's renamed.

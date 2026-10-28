@@ -4,6 +4,7 @@
 // Image optimisation and share-image rendering use headless Chrome via puppeteer-core
 // (dev-only; resolved from PUPPETEER_CORE or /workspace/seo-fixes/tools/node_modules).
 import fs from 'node:fs';
+import crypto from 'node:crypto';
 import path from 'node:path';
 import { createRequire } from 'node:module';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -135,8 +136,23 @@ export async function shareImage({ title, kicker = 'Insights', out }) {
 
 /* ---------- photo reuse check ---------- */
 function allPages() { const r = []; (function walk(d) { for (const f of fs.readdirSync(d, { withFileTypes: true })) { if (f.name.startsWith('.') || ['node_modules', 'img', 'assets', 'scripts'].includes(f.name)) continue; const p = path.join(d, f.name); if (f.isDirectory()) walk(p); else if (f.name.endsWith('.html')) r.push(p); } })(ROOT); return r; }
-function checkReuse(stem, selfFile) {
-  for (const p of allPages()) { if (p === selfFile || p.endsWith('_template.html')) continue; if (fs.readFileSync(p, 'utf8').includes(stem)) warn(`photo "${stem}" is already used on ${path.relative(ROOT, p)}; pick another photo`); }
+function checkReuse(stem, selfFile, hash, creditUrl) {
+  for (const p of allPages()) {
+    if (p === selfFile || p.endsWith('_template.html')) continue;
+    const h = fs.readFileSync(p, 'utf8'); const where = path.relative(ROOT, p);
+    if (h.includes(stem)) warn(`photo "${stem}" is already used on ${where}; pick another photo`);
+    const m = h.match(/<script type="application\/json" id="post-data">([\s\S]*?)<\/script>/);
+    const used = m ? JSON.parse(m[1]).photos || [] : [];
+    if (used.some((u) => u.hash === hash)) warn(`the same image file (${stem}) is already used on ${where}`);
+    if (creditUrl && used.some((u) => u.credit_url === creditUrl)) warn(`stock photo ${creditUrl} is already used on ${where}`);
+  }
+}
+const STOCK = { unsplash: ['Unsplash', 'https://unsplash.com/'], pexels: ['Pexels', 'https://www.pexels.com/'] };
+function creditHtml(c) {
+  if (!c || !c.credit) return '';
+  const name = c.credit_url ? `<a href="${esc(c.credit_url)}" target="_blank" rel="noopener">${esc(c.credit)}</a>` : esc(c.credit);
+  const st = STOCK[String(c.source || '').toLowerCase()];
+  return `<figcaption class="credit">Photo: ${name}${st ? ` on <a href="${st[1]}" target="_blank" rel="noopener">${st[0]}</a>` : ''}</figcaption>`;
 }
 
 /* ---------- posts registry ---------- */
@@ -182,10 +198,15 @@ async function main() {
   const resolveSrc = (p) => (p.startsWith('/') && fs.existsSync(path.join(ROOT, p)) ? path.join(ROOT, p) : path.resolve(draftDir, p));
   const images = []; const noImg = flag('--no-images');
 
-  async function photo(src, alt, descriptor, hero) {
+  const photos = [];
+  const credits = Object.fromEntries([].concat(fm.images || []).filter((x) => x.src).map((x) => [x.src, x]));
+  async function photo(src, alt, descriptor, hero, credit) {
     if (!alt) warn(`image ${src} has no alt text`);
     const file = resolveSrc(src); const stem = path.basename(file).replace(/\.[^.]+$/, '').replace(/-(800|1600)$/, '');
-    checkReuse(stem, outFile);
+    if (credit && credit.source && !STOCK[String(credit.source).toLowerCase()]) warn(`unknown source "${credit.source}" (use unsplash or pexels)`);
+    const hash = crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex');
+    checkReuse(stem, outFile, hash, credit && credit.credit_url);
+    photos.push({ stem, hash, ...(credit && credit.credit_url ? { credit_url: credit.credit_url } : {}) });
     const name = `${slug}-${slugify(descriptor || alt.split(/\s+/).slice(0, 6).join(' ') || 'image')}`;
     const dims = noImg ? { w: 1600, h: 1067, w8: 800 } : await optimise(file, name);
     images.push(`${SITE}/img/opt/${name}-1600.webp`);
@@ -195,10 +216,10 @@ async function main() {
   }
 
   let heroHtml = '', heroFile = null;
-  if (fm.hero) { if (!fm.hero_alt) warn('hero_alt is missing'); heroFile = resolveSrc(fm.hero); heroHtml = `<figure class="phero">${await photo(fm.hero, fm.hero_alt || '', fm.hero_descriptor || 'hero', true)}</figure>`; }
+  if (fm.hero) { if (!fm.hero_alt) warn('hero_alt is missing'); heroFile = resolveSrc(fm.hero); const hc = { credit: fm.hero_credit, credit_url: fm.hero_credit_url, source: fm.hero_source }; heroHtml = `<figure class="phero">${await photo(fm.hero, fm.hero_alt || '', fm.hero_descriptor || 'hero', true, hc)}${creditHtml(hc)}</figure>`; }
   // inline images: collect first, then render synchronously
   const imgJobs = []; markdown(body, (s, a, d) => { imgJobs.push([s, a, d]); return ''; });
-  const imgHtml = []; for (const [s, a, d] of imgJobs) imgHtml.push(await photo(s, a, d, false));
+  const imgHtml = []; for (const [s, a, d] of imgJobs) imgHtml.push(await photo(s, a, d, false, credits[s]) + creditHtml(credits[s]));
   let n = 0; const { html, toc } = markdown(body, (s, a) => `<figure>${imgHtml[n++]}${a ? '' : ''}</figure>`);
   const words = body.replace(/[#>*_`\[\]()!-]/g, ' ').split(/\s+/).filter(Boolean).length; const rt = Math.max(1, Math.round(words / 230));
   const tocHtml = toc.length >= 2 ? `<nav class="toc" aria-label="On this page"><strong>On this page</strong><ol>${toc.map(([id, t]) => `<li><a href="#${id}">${inline(t)}</a></li>`).join('')}</ol></nav>` : '';
@@ -219,7 +240,7 @@ async function main() {
     { '@type': 'BreadcrumbList', '@id': `${url}#breadcrumb`, itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` }, { '@type': 'ListItem', position: 2, name: 'Insights', item: `${SITE}/insights/` }, { '@type': 'ListItem', position: 3, name: fm.title, item: url }] },
   ];
   if (faq.length) graph.push({ '@type': 'FAQPage', '@id': `${url}#faq`, mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') } })) });
-  const postData = { slug, title: fm.title, date: fm.date, excerpt: fm.excerpt, reading_time: rt };
+  const postData = { slug, title: fm.title, date: fm.date, excerpt: fm.excerpt, reading_time: rt, photos };
   const vars = { meta_title: esc(fm.meta_title), meta_description: esc(fm.meta_description), keywords: esc(kw.join(', ')), canonical: url, og_image: ogUrl, title: esc(fm.title), crumb: esc(fm.crumb || fm.title), date: fm.date, updated, date_human: human(fm.date), reading_time: rt, hero: heroHtml, toc: tocHtml, body: html, faq: faqHtml, services: svcHtml, related: '', body_class: 'post-page v-a', jsonld: JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c'), post_data: JSON.stringify(postData).replace(/</g, '\\u003c') };
   let page = fs.readFileSync(path.join(INS, '_template.html'), 'utf8').replace(/<!-- POST TEMPLATE:[\s\S]*?-->\n?/, '');
   page = page.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
