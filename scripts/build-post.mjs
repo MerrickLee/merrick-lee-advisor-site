@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 // Build an Insights post from a markdown draft. No npm dependencies at runtime of the site.
 // Usage: node scripts/build-post.mjs <draft.md> [--no-images] [--og-only]
+// Inline images: put any number of ![alt](path "descriptor") lines on their own line where each
+// image should appear; credits for stock photos go in frontmatter `images:` keyed by src.
+// Every photo is checked against other pages and against the rest of this post (no repeats).
 // Image optimisation and share-image rendering use headless Chrome via puppeteer-core
 // (dev-only; resolved from PUPPETEER_CORE or /workspace/seo-fixes/tools/node_modules).
 import fs from 'node:fs';
@@ -206,6 +209,8 @@ async function main() {
     if (credit && credit.source && !STOCK[String(credit.source).toLowerCase()]) warn(`unknown source "${credit.source}" (use unsplash or pexels)`);
     const hash = crypto.createHash('sha1').update(fs.readFileSync(file)).digest('hex');
     checkReuse(stem, outFile, hash, credit && credit.credit_url);
+    const dup = photos.find((u) => u.hash === hash || u.stem === stem || (credit && credit.credit_url && u.credit_url === credit.credit_url));
+    if (dup) throw new Error(`photo "${stem}" is used twice in this post (already used as "${dup.stem}"); pick a different photo`);
     photos.push({ stem, hash, ...(credit && credit.credit_url ? { credit_url: credit.credit_url } : {}) });
     const name = `${slug}-${slugify(descriptor || alt.split(/\s+/).slice(0, 6).join(' ') || 'image')}`;
     const dims = noImg ? { w: 1600, h: 1067, w8: 800 } : await optimise(file, name);
