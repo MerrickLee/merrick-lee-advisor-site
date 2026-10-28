@@ -100,28 +100,29 @@ async function optimise(srcFile, name) {
   await pg.setContent('<canvas id="c"></canvas>');
   const res = await pg.evaluate(async (src) => {
     const im = new Image(); im.src = src; await im.decode(); const outs = {};
-    for (const w of [800, 1600]) { const tw = Math.min(w, im.naturalWidth); const th = Math.round(im.naturalHeight * tw / im.naturalWidth);
+    for (const w of [800, 1600]) { let tw = Math.min(w, im.naturalWidth); if (im.naturalHeight * tw / im.naturalWidth > w) tw = Math.round(w * im.naturalWidth / im.naturalHeight); const th = Math.round(im.naturalHeight * tw / im.naturalWidth);
       const c = document.getElementById('c'); c.width = tw; c.height = th; const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, tw, th);
-      outs[w] = { d: c.toDataURL('image/webp', w === 800 ? 0.78 : 0.8), w: tw, h: th }; }
+      outs[w] = { d: c.toDataURL('image/webp', w === 800 ? 0.72 : 0.66), w: tw, h: th }; }
     return outs;
   }, dataUrl(srcFile));
   await pg.close();
   for (const w of [800, 1600]) fs.writeFileSync(path.join(ROOT, 'img/opt', `${name}-${w}.webp`), Buffer.from(res[w].d.split(',')[1], 'base64'));
-  return { w: res[1600].w, h: res[1600].h };
+  for (const w of [800, 1600]) { const kb = fs.statSync(path.join(ROOT, 'img/opt', `${name}-${w}.webp`)).size / 1024; if (kb > 200) warn(`${name}-${w}.webp is ${Math.round(kb)} KB`); }
+  return { w: res[1600].w, h: res[1600].h, w8: res[800].w };
 }
 
 // Branded 1200x630 share image. Returns repo-relative path.
-export async function shareImage({ title, kicker = 'Insights', out, bg }) {
+export async function shareImage({ title, kicker = 'Insights', out }) {
   const font = (f) => pathToFileURL(path.join(ROOT, 'assets/fonts', f)).href;
   const sig = dataUrl(path.join(ROOT, 'img/opt/merrick-lee-signature-600.webp'));
-  const size = title.length > 70 ? 54 : title.length > 45 ? 64 : 76;
-  const html = `<html><head><style>@font-face{font-family:F;src:url(${font('fraunces-latin-var.woff2')})}@font-face{font-family:I;src:url(${font('inter-latin-var.woff2')})}
+  const size = title.length > 80 ? 56 : title.length > 55 ? 64 : 72;
+  const html = `<html><head><meta charset="utf-8"><style>@font-face{font-family:F;src:url(${font('fraunces-latin-var.woff2')})}@font-face{font-family:I;src:url(${font('inter-latin-var.woff2')})}
   *{margin:0;box-sizing:border-box}body{width:1200px;height:630px;overflow:hidden;font-family:I}
-  .c{position:relative;width:1200px;height:630px;background:#14213d;${bg ? `background:linear-gradient(90deg,rgba(20,33,61,.97) 0%,rgba(20,33,61,.88) 55%,rgba(20,33,61,.55) 100%),url(${bg}) center/cover;` : ''}color:#fbfaf7;padding:64px 72px 0}
-  .k{font-size:22px;letter-spacing:.14em;text-transform:uppercase;color:#7fd1bd;font-weight:600}
-  h1{font-family:F;font-weight:500;font-size:${size}px;line-height:1.08;letter-spacing:-.015em;margin-top:22px;max-width:960px}
-  .bar{position:absolute;left:0;right:0;bottom:0;height:120px;background:#fbfaf7;display:flex;align-items:center;justify-content:space-between;padding:0 72px;border-top:6px solid #2a7d6b}
-  .bar img{height:84px}.bar span{font-size:26px;font-weight:600;color:#14213d}</style></head>
+  .c{position:relative;background:#fbfaf7;height:630px;padding:56px 72px;border-bottom:14px solid #14213d}
+  .k{font-size:20px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#2a7d6b}
+  h1{font-family:F;font-weight:500;letter-spacing:-.015em;line-height:1.06;font-size:${size}px;color:#14213d;margin-top:20px;max-width:1000px}
+  .bar{position:absolute;left:72px;right:72px;bottom:44px;display:flex;justify-content:space-between;align-items:center;border-top:1px solid #e7e3da;padding-top:22px}
+  .bar img{height:78px}.bar span{font-size:24px;font-weight:600;color:#14213d}</style></head>
   <body><div class="c"><div class="k">${esc(kicker)}</div><h1>${esc(title)}</h1><div class="bar"><img src="${sig}"><span>merricklee.com</span></div></div></body></html>`;
   const tmp = path.join(ROOT, '.og-tmp.html'); fs.writeFileSync(tmp, html);
   const b = await getBrowser(); const pg = await b.newPage(); await pg.setViewport({ width: 1200, height: 630 });
@@ -168,7 +169,7 @@ function updateSitemap(slug, date) {
 /* ---------- main ---------- */
 async function main() {
   if (!draftPath) { console.log('Usage: node scripts/build-post.mjs <draft.md> [--no-images]\n       node scripts/build-post.mjs --listing-og   (regenerate /img/og/insights.jpg)\n       node scripts/build-post.mjs --reindex      (rebuild listing + related blocks)'); 
-    if (flag('--listing-og')) await shareImage({ title: 'Lessons on growth, marketing and AI', kicker: 'Insights · Merrick Lee Jr.', out: 'img/og/insights.jpg' });
+    if (flag('--listing-og')) await shareImage({ title: 'Lessons on growth, marketing and AI', out: 'img/og/insights.jpg' });
     if (flag('--reindex')) { const ps = readPosts(); regenListing(ps); regenRelated(ps); }
     if (browser) await browser.close(); return; }
   const draftDir = path.dirname(path.resolve(draftPath));
@@ -186,11 +187,11 @@ async function main() {
     const file = resolveSrc(src); const stem = path.basename(file).replace(/\.[^.]+$/, '').replace(/-(800|1600)$/, '');
     checkReuse(stem, outFile);
     const name = `${slug}-${slugify(descriptor || alt.split(/\s+/).slice(0, 6).join(' ') || 'image')}`;
-    const dims = noImg ? { w: 1600, h: 1067 } : await optimise(file, name);
+    const dims = noImg ? { w: 1600, h: 1067, w8: 800 } : await optimise(file, name);
     images.push(`${SITE}/img/opt/${name}-1600.webp`);
     const attrs = hero ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"';
     const sizes = hero ? '(max-width:1320px) 100vw, 1240px' : '(max-width:760px) 100vw, 700px';
-    return `<img ${attrs} sizes="${sizes}" src="/img/opt/${name}-1600.webp" srcset="/img/opt/${name}-800.webp 800w, /img/opt/${name}-1600.webp 1600w" width="${dims.w}" height="${dims.h}" alt="${esc(alt)}">`;
+    return `<img ${attrs} sizes="${sizes}" src="/img/opt/${name}-1600.webp" srcset="/img/opt/${name}-800.webp ${dims.w8 || 800}w, /img/opt/${name}-1600.webp ${dims.w}w" width="${dims.w}" height="${dims.h}" alt="${esc(alt)}">`;
   }
 
   let heroHtml = '', heroFile = null;
@@ -210,7 +211,7 @@ async function main() {
   const svcHtml = `<section class="psvc" aria-labelledby="svc-h"><h2 id="svc-h">Where I can help</h2><ul>${svc.map((s) => `<li><a href="/${s}/">${SERVICES[s][0]}<span>${SERVICES[s][1]}</span></a></li>`).join('')}${extra.map((r) => `<li><a href="${esc(r.url)}">${esc(r.title)}${r.note ? `<span>${esc(r.note)}</span>` : ''}</a></li>`).join('')}</ul></section>`;
 
   const ogRel = `img/og/${slug}.jpg`;
-  if (!noImg) await shareImage({ title: fm.title, out: ogRel, bg: heroFile ? dataUrl(heroFile) : null });
+  if (!noImg) await shareImage({ title: fm.title, out: ogRel });
   const ogUrl = `${SITE}/${ogRel}`;
   const person = { '@type': 'Person', '@id': `${SITE}/#person`, name: 'Merrick Lee Jr.', url: `${SITE}/`, jobTitle: 'Strategic Growth Advisor' };
   const graph = [
@@ -219,7 +220,7 @@ async function main() {
   ];
   if (faq.length) graph.push({ '@type': 'FAQPage', '@id': `${url}#faq`, mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') } })) });
   const postData = { slug, title: fm.title, date: fm.date, excerpt: fm.excerpt, reading_time: rt };
-  const vars = { meta_title: esc(fm.meta_title), meta_description: esc(fm.meta_description), keywords: esc(kw.join(', ')), canonical: url, og_image: ogUrl, title: esc(fm.title), crumb: esc(fm.crumb || fm.title), date: fm.date, updated, date_human: human(fm.date), reading_time: rt, hero: heroHtml, toc: tocHtml, body: html, faq: faqHtml, services: svcHtml, related: '', body_class: 'post-page', jsonld: JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c'), post_data: JSON.stringify(postData).replace(/</g, '\\u003c') };
+  const vars = { meta_title: esc(fm.meta_title), meta_description: esc(fm.meta_description), keywords: esc(kw.join(', ')), canonical: url, og_image: ogUrl, title: esc(fm.title), crumb: esc(fm.crumb || fm.title), date: fm.date, updated, date_human: human(fm.date), reading_time: rt, hero: heroHtml, toc: tocHtml, body: html, faq: faqHtml, services: svcHtml, related: '', body_class: 'post-page v-a', jsonld: JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c'), post_data: JSON.stringify(postData).replace(/</g, '\\u003c') };
   let page = fs.readFileSync(path.join(INS, '_template.html'), 'utf8').replace(/<!-- POST TEMPLATE:[\s\S]*?-->\n?/, '');
   page = page.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
   fs.mkdirSync(outDir, { recursive: true }); fs.writeFileSync(outFile, page);
