@@ -49,7 +49,7 @@ faq:                                   # optional; adds a Questions section + FA
 The markdown body supports `##`/`###` headings (each H2 feeds the auto table of contents), paragraphs, `-`/`1.` lists, `**bold**`, `*italic*`, `[links](/url/)`, `> blockquotes` and inline images on their own line: `![alt text](/img/source.jpg "seo-descriptor")`.
 
 What the script does:
-- Converts every photo to `/img/opt/<slug>-<descriptor>-800.webp` and `-1600.webp` (WebP q0.72/0.66, height capped at the tier width, warns over 200 KB) with srcset, width and height. The hero loads eagerly with `fetchpriority="high"`. Inline images lazy-load.
+- Converts every photo to `/img/opt/<slug>-<descriptor>-800.webp` and `-1600.webp` (WebP q0.72/0.66, stepped down automatically to stay under ~195 KB, height capped at the tier width, warns over 200 KB) with srcset, width and height. The hero loads eagerly with `fetchpriority="high"`. Inline images lazy-load.
 - Warns if a photo is already used on another page (no photo should appear twice on the site) or is missing alt text.
 - Renders a 1200×630 branded share image (Editorial style: off-white card, Fraunces navy title, signature, navy rule; no photo) to `/img/og/<slug>.jpg` and uses it for og:image and twitter:image.
 - Writes Article, BreadcrumbList and (when there's an faq) FAQPage JSON-LD, plus canonical, OG and Twitter tags.

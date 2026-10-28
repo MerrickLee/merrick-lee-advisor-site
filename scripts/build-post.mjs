@@ -103,7 +103,7 @@ async function optimise(srcFile, name) {
     const im = new Image(); im.src = src; await im.decode(); const outs = {};
     for (const w of [800, 1600]) { let tw = Math.min(w, im.naturalWidth); if (im.naturalHeight * tw / im.naturalWidth > w) tw = Math.round(w * im.naturalWidth / im.naturalHeight); const th = Math.round(im.naturalHeight * tw / im.naturalWidth);
       const c = document.getElementById('c'); c.width = tw; c.height = th; const x = c.getContext('2d'); x.imageSmoothingQuality = 'high'; x.drawImage(im, 0, 0, tw, th);
-      outs[w] = { d: c.toDataURL('image/webp', w === 800 ? 0.72 : 0.66), w: tw, h: th }; }
+      let q = w === 800 ? 0.72 : 0.66, d = c.toDataURL('image/webp', q); while (d.length * 0.75 > 195 * 1024 && q > 0.45) { q -= 0.05; d = c.toDataURL('image/webp', q); } outs[w] = { d, w: tw, h: th }; }
     return outs;
   }, dataUrl(srcFile));
   await pg.close();
