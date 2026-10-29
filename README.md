@@ -37,6 +37,7 @@ hero: /img/some-source-photo.jpg      # optional; repo-root path or path relativ
 hero_alt: Descriptive alt text
 hero_descriptor: speaking-to-owners   # optional; used in the SEO file name
 services: [marketing-audit, fractional-cmo]   # 2–3 of: fractional-cmo, growth-marketing-consultant, marketing-audit, marketing-strategy-workshop
+related_posts: [slug-a, slug-b]          # optional; orders the "Related insights" block (else newest posts)
 related:                               # optional extra links
   - title: Pricing
     url: /pricing/

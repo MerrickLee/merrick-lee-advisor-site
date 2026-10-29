@@ -1,6 +1,7 @@
 #!/usr/bin/env node
 // Build an Insights post from a markdown draft. No npm dependencies at runtime of the site.
 // Usage: node scripts/build-post.mjs <draft.md> [--no-images] [--og-only]
+// Optional frontmatter `related_posts: [slug, ...]` orders the "Related insights" block (falls back to newest).
 // Inline images: put any number of ![alt](path "descriptor") lines on their own line where each
 // image should appear; credits for stock photos go in frontmatter `images:` keyed by src.
 // Every photo is checked against other pages and against the rest of this post (no repeats).
@@ -174,7 +175,7 @@ function regenListing(posts) {
 }
 function regenRelated(posts) {
   for (const p of posts) {
-    const f = path.join(INS, p.slug, 'index.html'); const others = posts.filter((o) => o.slug !== p.slug).slice(0, 3);
+    const f = path.join(INS, p.slug, 'index.html'); const pick = [].concat(p.related_posts || []).map((s) => posts.find((o) => o.slug === s)).filter((o) => o && o.slug !== p.slug); const others = [...new Set([...pick, ...posts.filter((o) => o.slug !== p.slug)])].slice(0, 3);
     const block = others.length ? `<section class="prel" aria-labelledby="rel-h"><h2 id="rel-h">Related insights</h2><ul>${others.map((o) => `<li><a href="/insights/${o.slug}/">${esc(o.title)}<span>${esc(o.excerpt)}</span></a></li>`).join('')}</ul></section>` : '';
     fs.writeFileSync(f, fs.readFileSync(f, 'utf8').replace(/<!-- RELATED:START -->[\s\S]*?<!-- RELATED:END -->/, `<!-- RELATED:START -->${block}<!-- RELATED:END -->`));
   }
@@ -245,7 +246,7 @@ async function main() {
     { '@type': 'BreadcrumbList', '@id': `${url}#breadcrumb`, itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` }, { '@type': 'ListItem', position: 2, name: 'Insights', item: `${SITE}/insights/` }, { '@type': 'ListItem', position: 3, name: fm.title, item: url }] },
   ];
   if (faq.length) graph.push({ '@type': 'FAQPage', '@id': `${url}#faq`, mainEntity: faq.map((f) => ({ '@type': 'Question', name: f.q, acceptedAnswer: { '@type': 'Answer', text: f.a.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1') } })) });
-  const postData = { slug, title: fm.title, date: fm.date, excerpt: fm.excerpt, reading_time: rt, photos };
+  const postData = { slug, title: fm.title, date: fm.date, excerpt: fm.excerpt, reading_time: rt, photos, ...(fm.related_posts && [].concat(fm.related_posts).length ? { related_posts: [].concat(fm.related_posts).map(slugify) } : {}) };
   const vars = { meta_title: esc(fm.meta_title), meta_description: esc(fm.meta_description), keywords: esc(kw.join(', ')), canonical: url, og_image: ogUrl, title: esc(fm.title), crumb: esc(fm.crumb || fm.title), date: fm.date, updated, date_human: human(fm.date), reading_time: rt, hero: heroHtml, toc: tocHtml, body: html, faq: faqHtml, services: svcHtml, related: '', body_class: 'post-page v-a', jsonld: JSON.stringify({ '@context': 'https://schema.org', '@graph': graph }).replace(/</g, '\\u003c'), post_data: JSON.stringify(postData).replace(/</g, '\\u003c') };
   let page = fs.readFileSync(path.join(INS, '_template.html'), 'utf8').replace(/<!-- POST TEMPLATE:[\s\S]*?-->\n?/, '');
   page = page.replace(/\{\{(\w+)\}\}/g, (m, k) => (k in vars ? String(vars[k]) : m));
