@@ -240,7 +240,7 @@ async function main() {
   const ogRel = `img/og/${slug}.jpg`;
   if (!noImg) await shareImage({ title: fm.title, out: ogRel });
   const ogUrl = `${SITE}/${ogRel}`;
-  const person = { '@type': 'Person', '@id': `${SITE}/#person`, name: 'Merrick Lee Jr.', url: `${SITE}/`, jobTitle: 'Strategic Growth Advisor' };
+  const person = { '@type': 'Person', '@id': `${SITE}/#person`, name: 'Merrick Lee Jr.', url: `${SITE}/`, jobTitle: 'Strategic Growth Advisor & Fractional CMO', worksFor: { '@type': 'Organization', '@id': 'https://croesave.com/#org', name: 'Croes Ave', url: 'https://croesave.com/' }, address: { '@type': 'PostalAddress', addressLocality: 'New York City', addressRegion: 'NY', addressCountry: 'US' } };
   const graph = [
     { '@type': 'Article', '@id': `${url}#article`, headline: fm.title, description: fm.meta_description, url, mainEntityOfPage: url, image: [ogUrl, ...images], datePublished: fm.date, dateModified: updated, inLanguage: 'en-US', wordCount: words, ...(kw.length ? { keywords: kw.join(', ') } : {}), author: person, publisher: { '@id': `${SITE}/#person` }, isPartOf: { '@id': `${SITE}/insights/#blog` }, breadcrumb: { '@id': `${url}#breadcrumb` } },
     { '@type': 'BreadcrumbList', '@id': `${url}#breadcrumb`, itemListElement: [{ '@type': 'ListItem', position: 1, name: 'Home', item: `${SITE}/` }, { '@type': 'ListItem', position: 2, name: 'Insights', item: `${SITE}/insights/` }, { '@type': 'ListItem', position: 3, name: fm.title, item: url }] },
