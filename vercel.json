@@ -4,6 +4,12 @@
   "headers": [
     {
       "source": "/(.*)",
+      "has": [
+        {
+          "type": "host",
+          "value": "(.*)\\.vercel\\.app"
+        }
+      ],
       "headers": [
         {
           "key": "X-Robots-Tag",
@@ -28,6 +34,88 @@
           "value": "public, max-age=31536000, immutable"
         }
       ]
+    }
+  ],
+  "redirects": [
+    {
+      "source": "/digital-marketing",
+      "destination": "/growth-marketing-consultant/",
+      "permanent": true
+    },
+    {
+      "source": "/mobile-app-development",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/website-development-hosting",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/savatree",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/hello-world",
+      "destination": "/insights/",
+      "permanent": true
+    },
+    {
+      "source": "/category/:path*",
+      "destination": "/insights/",
+      "permanent": true
+    },
+    {
+      "source": "/author/:path*",
+      "destination": "/#about",
+      "permanent": true
+    },
+    {
+      "source": "/feed",
+      "destination": "/insights/",
+      "permanent": true
+    },
+    {
+      "source": "/wp-admin/:path*",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wp-login.php",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wp-content/:path*",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wp-json/:path*",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap_index.xml",
+      "destination": "/sitemap.xml",
+      "permanent": true
+    },
+    {
+      "source": "/page-sitemap.xml",
+      "destination": "/sitemap.xml",
+      "permanent": true
+    },
+    {
+      "source": "/post-sitemap.xml",
+      "destination": "/sitemap.xml",
+      "permanent": true
+    },
+    {
+      "source": "/wp-sitemap.xml",
+      "destination": "/sitemap.xml",
+      "permanent": true
     }
   ]
 }
