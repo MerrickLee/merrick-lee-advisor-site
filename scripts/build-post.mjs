@@ -217,7 +217,8 @@ async function main() {
     const dims = noImg ? { w: 1600, h: 1067, w8: 800 } : await optimise(file, name);
     images.push(`${SITE}/img/opt/${name}-1600.webp`);
     const attrs = hero ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"';
-    const sizes = hero ? '(max-width:1320px) 100vw, 1240px' : '(max-width:760px) 100vw, 700px';
+    // Inline images fill the .pbody column: 68ch at 19px = ~775px, minus 20px side padding on small screens.
+    const sizes = hero ? '(max-width:1320px) 100vw, 1240px' : '(max-width:815px) calc(100vw - 40px), 775px';
     return `<img ${attrs} sizes="${sizes}" src="/img/opt/${name}-1600.webp" srcset="/img/opt/${name}-800.webp ${dims.w8 || 800}w, /img/opt/${name}-1600.webp ${dims.w}w" width="${dims.w}" height="${dims.h}" alt="${esc(alt)}">`;
   }
 
