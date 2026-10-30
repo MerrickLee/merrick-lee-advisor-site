@@ -43,7 +43,17 @@
       "permanent": true
     },
     {
+      "source": "/digital-marketing/",
+      "destination": "/growth-marketing-consultant/",
+      "permanent": true
+    },
+    {
       "source": "/mobile-app-development",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/mobile-app-development/",
       "destination": "/",
       "permanent": true
     },
@@ -53,12 +63,27 @@
       "permanent": true
     },
     {
+      "source": "/website-development-hosting/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
       "source": "/savatree",
       "destination": "/",
       "permanent": true
     },
     {
+      "source": "/savatree/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
       "source": "/hello-world",
+      "destination": "/insights/",
+      "permanent": true
+    },
+    {
+      "source": "/hello-world/",
       "destination": "/insights/",
       "permanent": true
     },
@@ -74,6 +99,11 @@
     },
     {
       "source": "/feed",
+      "destination": "/insights/",
+      "permanent": true
+    },
+    {
+      "source": "/feed/",
       "destination": "/insights/",
       "permanent": true
     },
