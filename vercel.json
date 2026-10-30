@@ -88,12 +88,12 @@
       "permanent": true
     },
     {
-      "source": "/category/:path*",
+      "source": "/category/(.*)",
       "destination": "/insights/",
       "permanent": true
     },
     {
-      "source": "/author/:path*",
+      "source": "/author/(.*)",
       "destination": "/#about",
       "permanent": true
     },
@@ -108,7 +108,7 @@
       "permanent": true
     },
     {
-      "source": "/wp-admin/:path*",
+      "source": "/wp-admin/(.*)",
       "destination": "/",
       "permanent": true
     },
@@ -118,12 +118,12 @@
       "permanent": true
     },
     {
-      "source": "/wp-content/:path*",
+      "source": "/wp-content/(.*)",
       "destination": "/",
       "permanent": true
     },
     {
-      "source": "/wp-json/:path*",
+      "source": "/wp-json/(.*)",
       "destination": "/",
       "permanent": true
     },
