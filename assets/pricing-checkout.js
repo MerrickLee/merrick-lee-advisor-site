@@ -8,13 +8,13 @@
    If the final scoped price is different, the deposit is adjusted to 30% of that price.
    These numbers stay the starting deposits shown on each offer:
      Growth Audit $3,500 → 1050
-     Strategy Workshop $2,500 → 750
+     Strategy Workshop $5,000 → 1500
      Advisory Retainer $3,000 (first month) → 900
      Fractional CMO $8,000 (first month) → 2400
 */
 const PRICING_CHECKOUT = {
   growthAudit: { url: "", deposit: 1050 },
-  strategyWorkshop: { url: "", deposit: 750 },
+  strategyWorkshop: { url: "", deposit: 1500 },
   advisoryRetainer: { url: "", deposit: 900, firstMonth: true },
   fractionalCmo: { url: "", deposit: 2400, firstMonth: true }
 };
@@ -25,7 +25,7 @@ const PRICING_CHECKOUT = {
   }
   Object.keys(PRICING_CHECKOUT).forEach(function (key) {
     var item = PRICING_CHECKOUT[key];
-    var label = "30% of the starting price, " + money(item.deposit) + (item.firstMonth ? ", first month" : "");
+    var label = "30% deposit to start: " + money(item.deposit) + (item.firstMonth ? ", first month" : "");
     document.querySelectorAll('[data-deposit="' + key + '"]').forEach(function (el) {
       el.textContent = label;
     });
