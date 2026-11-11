@@ -204,7 +204,7 @@ async function main() {
 
   const photos = [];
   const credits = Object.fromEntries([].concat(fm.images || []).filter((x) => x.src).map((x) => [x.src, x]));
-  async function photo(src, alt, descriptor, hero, credit) {
+  async function photo(src, alt, descriptor, hero, credit, pos) {
     if (!alt) warn(`image ${src} has no alt text`);
     const file = resolveSrc(src); const stem = path.basename(file).replace(/\.[^.]+$/, '').replace(/-(800|1600)$/, '');
     if (credit && credit.source && !STOCK[String(credit.source).toLowerCase()]) warn(`unknown source "${credit.source}" (use unsplash or pexels)`);
@@ -219,11 +219,11 @@ async function main() {
     const attrs = hero ? 'fetchpriority="high" decoding="async"' : 'loading="lazy" decoding="async"';
     // Inline images fill the .pbody column: 68ch at 19px = ~775px, minus 20px side padding on small screens.
     const sizes = hero ? '(max-width:1320px) 100vw, 1240px' : '(max-width:815px) calc(100vw - 40px), 775px';
-    return `<img ${attrs} sizes="${sizes}" src="/img/opt/${name}-1600.webp" srcset="/img/opt/${name}-800.webp ${dims.w8 || 800}w, /img/opt/${name}-1600.webp ${dims.w}w" width="${dims.w}" height="${dims.h}" alt="${esc(alt)}">`;
+    return `<img ${attrs} sizes="${sizes}" src="/img/opt/${name}-1600.webp" srcset="/img/opt/${name}-800.webp ${dims.w8 || 800}w, /img/opt/${name}-1600.webp ${dims.w}w" width="${dims.w}" height="${dims.h}"${pos ? ` style="object-position:${esc(pos)}"` : ''} alt="${esc(alt)}">`;
   }
 
   let heroHtml = '', heroFile = null;
-  if (fm.hero) { if (!fm.hero_alt) warn('hero_alt is missing'); heroFile = resolveSrc(fm.hero); const hc = { credit: fm.hero_credit, credit_url: fm.hero_credit_url, source: fm.hero_source }; heroHtml = `<figure class="phero">${await photo(fm.hero, fm.hero_alt || '', fm.hero_descriptor || 'hero', true, hc)}${creditHtml(hc)}</figure>`; }
+  if (fm.hero) { if (!fm.hero_alt) warn('hero_alt is missing'); heroFile = resolveSrc(fm.hero); const hc = { credit: fm.hero_credit, credit_url: fm.hero_credit_url, source: fm.hero_source }; heroHtml = `<figure class="phero">${await photo(fm.hero, fm.hero_alt || '', fm.hero_descriptor || 'hero', true, hc, fm.hero_position)}${creditHtml(hc)}</figure>`; }
   // inline images: collect first, then render synchronously
   const imgJobs = []; markdown(body, (s, a, d) => { imgJobs.push([s, a, d]); return ''; });
   const imgHtml = []; for (const [s, a, d] of imgJobs) imgHtml.push(await photo(s, a, d, false, credits[s]) + creditHtml(credits[s]));
