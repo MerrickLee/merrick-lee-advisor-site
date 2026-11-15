@@ -35,12 +35,5 @@ if(o){p.hidden=false;if(!f){f=d.createElement('iframe');f.id=ID;f.src=U;f.title=
 var s=d.createElement('script');s.src='https://link.msgsndr.com/js/form_embed.js';s.async=true;d.body.appendChild(s)}
 requestAnimationFrame(function(){requestAnimationFrame(function(){p.classList.add('open')})})}
 else{p.classList.remove('open');setTimeout(function(){if(!p.classList.contains('open'))p.hidden=true},matchMedia('(prefers-reduced-motion: reduce)').matches?0:400)}})})();
-(function(){var d=document;if(d.querySelector('.liora-fab'))return;
-if(!d.querySelector('link[href="/assets/liora.css"]')){var l=d.createElement('link');l.rel='stylesheet';l.href='/assets/liora.css';d.head.appendChild(l)}
-var a=d.createElement('a');a.className='liora-fab';a.href='tel:+19144916765';
-a.setAttribute('aria-label',"Call Liora, Merrick's AI assistant, at (914) 491-6765");
-a.innerHTML='<img src="/img/opt/liora-ai-assistant-headset-200.webp" width="200" height="200" alt="">Call Liora<span class="liora-fab-num">(914) 491-6765</span>';
-d.body.appendChild(a);
-var hide=function(){var on=false;['.liora-bar','footer','#talk-to-liora'].forEach(function(sel){var el=d.querySelector(sel);if(!el)return;var r=el.getBoundingClientRect();if(r.bottom>80&&r.top<innerHeight-8)on=true});a.classList.toggle('is-hidden',on)};
-if('IntersectionObserver' in window){var io=new IntersectionObserver(hide,{rootMargin:'0px 0px -8px 0px'});['.liora-bar','footer','#talk-to-liora'].forEach(function(sel){var el=d.querySelector(sel);if(el)io.observe(el)})}
-addEventListener('scroll',hide,{passive:true});addEventListener('resize',hide);hide()})();
+(function(){var d=document;if(d.getElementById('lc-root')||d.querySelector('script[src="/assets/liora-chat.js"]'))return;
+var s=d.createElement('script');s.src='/assets/liora-chat.js';s.defer=true;d.body.appendChild(s)})();

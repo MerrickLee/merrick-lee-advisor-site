@@ -75,3 +75,11 @@ images:                         # credits for inline images, matched by src
 ```
 
 Credited images get a small caption such as "Photo: Jane Doe on Unsplash". The links use `rel="noopener"`. The photo-reuse warning compares each image's file hash and stock credit URL against existing posts, so a stock photo still gets caught after it's renamed.
+
+## Liora chat panel
+
+`/assets/liora-chat.js` (loaded by `site.js` on every page) adds a floating "Chat with Liora" bubble bottom-right. It opens a typed chat with Liora, Merrick's AI assistant, with a "Call Liora" tap-to-call button ((914) 491-6765) in the panel header. Styles are in `/assets/liora.css`.
+
+- **Endpoint:** `window.LIORA_CHAT_URL`, or `<meta name="liora-chat-url" content="https://…/chat">`, or `DEFAULT_URL` at the top of `liora-chat.js`. The server is `liora-voice` (`POST /chat`, `POST /chat/end`). Its CORS allowlist covers merricklee.com, www, localhost and `merrick-lee-advisor-site*.vercel.app` previews.
+- **Fallback:** if the endpoint is empty or unreachable, the panel shows the phone number and liora@merricklee.com.
+- The conversation is kept in `sessionStorage` so it follows the visitor across pages; "End chat" ends it on the server (lead record + check-in for Merrick).
