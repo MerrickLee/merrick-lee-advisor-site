@@ -82,4 +82,5 @@ Credited images get a small caption such as "Photo: Jane Doe on Unsplash". The l
 
 - **Endpoint:** `window.LIORA_CHAT_URL`, or `<meta name="liora-chat-url" content="https://…/chat">`, or `DEFAULT_URL` at the top of `liora-chat.js`. The server is `liora-voice` (`POST /chat`, `POST /chat/end`). Its CORS allowlist covers merricklee.com, www, localhost and `merrick-lee-advisor-site*.vercel.app` previews.
 - **Fallback:** if the endpoint is empty or unreachable, the panel shows the phone number and liora@merricklee.com.
+- **Pre-chat form:** visitors must enter name, email, and a US phone and pass a Cloudflare Turnstile check (managed widget, site key `TURNSTILE_SITEKEY` in `liora-chat.js`) before chatting. There's also a hidden honeypot field; the server (`POST /chat/start`) re-validates everything, verifies the Turnstile token, and checks the fill time. Turnstile only works on merricklee.com, www, and localhost, so Vercel previews show the form but can't start a chat.
 - The conversation is kept in `sessionStorage` so it follows the visitor across pages; "End chat" ends it on the server (lead record + check-in for Merrick).
