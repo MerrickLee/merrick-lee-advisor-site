@@ -7,13 +7,13 @@
    The amounts below are 30% of the published starting prices, verified against the pages and Offer schema.
    If the final scoped price is different, the deposit is adjusted to 30% of that price.
    These numbers stay the starting deposits shown on each offer:
-     Growth Audit $3,500 → 1050
+     Growth Audit $1,000 → 300
      Strategy Workshop $5,000 → 1500
      Advisory Retainer $3,000 (first month) → 900
      Fractional CMO $8,000 (first month) → 2400
 */
 const PRICING_CHECKOUT = {
-  growthAudit: { url: "", deposit: 1050 },
+  growthAudit: { url: "", deposit: 300 },
   strategyWorkshop: { url: "", deposit: 1500 },
   advisoryRetainer: { url: "", deposit: 900, firstMonth: true },
   fractionalCmo: { url: "", deposit: 2400, firstMonth: true }
