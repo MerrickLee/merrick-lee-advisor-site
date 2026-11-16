@@ -9,8 +9,7 @@
   if (d.getElementById('lc-root')) return;
 
   // ---- config ----
-  // TEMPORARY for the draft PR: Merrick's Mac via a Cloudflare quick tunnel (changes on restart).
-  // Replace with the permanent server URL (Render) before this goes live.
+  // Shared Liora/Ava server on Render. This file is still on the draft PR and is not live until merged.
   var DEFAULT_URL = 'https://liora-ava-voice-363n.onrender.com/chat';
   var TURNSTILE_SITEKEY = '0x4AAAAAAGClv7TpPcBxxfe9'; // Cloudflare Turnstile (managed) widget for merricklee.com + croesave.com + localhost
   var NAME = 'Liora', SUB = 'Merrick\'s AI assistant';
