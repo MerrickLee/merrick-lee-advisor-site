@@ -2,7 +2,8 @@
    plus a tap-to-call button. Talks to the shared Liora/Ava server (POST /chat/start, /chat, /chat/end).
    Visitors must fill in name, email and phone and pass a Cloudflare Turnstile check before chatting.
    Endpoint: window.LIORA_CHAT_URL, or <meta name="liora-chat-url" content="...">, or DEFAULT_URL below.
-   If the endpoint is empty or unreachable, the panel falls back to the phone number and email. */
+   If the endpoint is empty or unreachable, the panel falls back to the phone number and email.
+   Analytics goes through window.dataLayer (GTM). Events carry no names, emails, phones, or typed text. */
 (function () {
   'use strict';
   var d = document, w = window;
@@ -20,8 +21,52 @@
   var API = (typeof w.LIORA_CHAT_URL === 'string' ? w.LIORA_CHAT_URL : (meta ? meta.content : DEFAULT_URL)) || '';
   var BASE = API.replace(/\/chat\/?$/, '');
   var START = API ? BASE + '/chat/start' : '', END = API ? BASE + '/chat/end' : '';
-  var MAX = 1000, K_SID = KP + '-sid', K_LOG = KP + '-log', K_OPEN = KP + '-open';
+  var MAX = 1000, K_SID = KP + '-sid', K_LOG = KP + '-log', K_OPEN = KP + '-open', K_ENDED = KP + '-ended';
   var INTRO = "Hi, I\'m Liora, Merrick\'s AI assistant. Before we chat, please share your name, email, and phone so Merrick can follow up.";
+  // Static opening chips from the Liora server (LIORA_GREETING_CHIPS). These are the only
+  // chip labels and interest values allowed into analytics. Typed text never qualifies.
+  var GREETING_CHIPS = [
+    'Fractional CMO / growth consulting',
+    'Growth Audit ($1,000)',
+    'Agency marketing services (Croes Ave)',
+    'Something else'
+  ];
+  var FORM_ERRORS = { invalid_name: 1, invalid_email: 1, invalid_phone: 1, validation: 1, bot_check_required: 1, invalid_fields: 1, too_fast: 1, rate_limited: 1, unavailable: 1, network: 1, rejected: 1, verification_unavailable: 1, chat_unavailable: 1, busy: 1 };
+  var BOT_REASONS = { timeout: 1, error: 1, expired: 1, load_error: 1, verification_failed: 1 };
+  var LINK_LOCS = { chat_panel: 1, talk_bar: 1, talk_section: 1, header: 1 };
+  var EVENTS = { chat_open: 1, chat_form_submit: 1, chat_form_error: 1, chat_bot_check_fail: 1, chat_start: 1, generate_lead: 1, chat_chip_click: 1, chat_message: 1, chat_end: 1, phone_click: 1 };
+
+  // Pushes a GTM dataLayer event. Never throws. Only allowlisted keys and values
+  // are copied, so names, emails, phone numbers, and typed messages cannot ride along.
+  function track(event, params) {
+    try {
+      if (!EVENTS[event]) return;
+      var path = '/';
+      try { path = String(location.pathname || '/'); } catch (e) { path = '/'; }
+      if (!/^\/[A-Za-z0-9/_\-]{0,120}$/.test(path)) path = '/';
+      var payload = { event: event, bot: 'liora', site: 'merricklee.com', page_path: path };
+      if (params && typeof params === 'object') {
+        if (params.error_type && FORM_ERRORS[params.error_type]) payload.error_type = params.error_type;
+        if (params.reason && BOT_REASONS[params.reason]) payload.reason = params.reason;
+        if (params.lead_source === 'chat') payload.lead_source = 'chat';
+        if (params.interest != null) payload.interest = chipLabel(params.interest) || 'unknown';
+        var chip = chipLabel(params.chip_label);
+        if (chip) payload.chip_label = chip;
+        if (params.link_location && LINK_LOCS[params.link_location]) payload.link_location = params.link_location;
+        if (params.message_count != null) {
+          var n = Number(params.message_count);
+          if (isFinite(n) && n >= 0 && n <= 10000) payload.message_count = Math.floor(n);
+        }
+      }
+      w.dataLayer = w.dataLayer || [];
+      w.dataLayer.push(payload);
+    } catch (e) {}
+  }
+  function chipLabel(label) {
+    var s = String(label == null ? '' : label).replace(/^\s+|\s+$/g, '');
+    for (var i = 0; i < GREETING_CHIPS.length; i++) if (GREETING_CHIPS[i] === s) return GREETING_CHIPS[i];
+    return '';
+  }
 
   function store(k, v) { try { if (v === null) sessionStorage.removeItem(k); else sessionStorage.setItem(k, typeof v === 'string' ? v : JSON.stringify(v)); } catch (e) {} }
   function load(k, json) { try { var v = sessionStorage.getItem(k); return json ? (v ? JSON.parse(v) : null) : v; } catch (e) { return null; } }
@@ -85,7 +130,28 @@
   var fName = q('#lc-name'), fEmail = q('#lc-email'), fPhone = q('#lc-phone'), fHp = q('#lc-website');
 
   var sid = load(K_SID), history = load(K_LOG, true) || [], busy = false;
-  var formShownAt = 0, tsWidget = null, tsToken = '', tsLoading = false, tsWatch = null;
+  var chatLive = Boolean(sid) && load(K_ENDED) !== '1';
+  var formShownAt = 0, tsWidget = null, tsToken = '', tsLoading = false, tsWatch = null, tsFailed = false;
+
+  function botFail(reason) {
+    if (tsFailed) return;
+    tsFailed = true;
+    track('chat_bot_check_fail', { reason: reason });
+  }
+  function trackChatEnd() {
+    try {
+      if (load(K_ENDED) === '1') return;
+      if (!sid && !chatLive) return;
+      chatLive = false;
+      store(K_ENDED, '1');
+      track('chat_end');
+    } catch (e) {}
+  }
+  function userMessageCount() {
+    var n = 0;
+    for (var i = 0; i < history.length; i++) if (history[i].r === 'user') n++;
+    return n;
+  }
 
   // ---- validation (the server re-checks all of this) ----
   function usPhone(v) {
@@ -112,7 +178,10 @@
     s.src = 'https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit';
     s.async = true; s.defer = true;
     s.onload = function () { cb(); };
-    s.onerror = function () { preErr.textContent = 'The human check could not load. ' + reach.replace(/<[^>]+>/g, ''); };
+    s.onerror = function () {
+      preErr.textContent = 'The human check could not load. ' + reach.replace(/<[^>]+>/g, '');
+      botFail('load_error');
+    };
     d.head.appendChild(s);
   }
   function renderTurnstile() {
@@ -123,14 +192,16 @@
         sitekey: TURNSTILE_SITEKEY, theme: 'light', size: 'flexible', action: 'chat_start',
         callback: function (t) {
           tsToken = t;
+          tsFailed = false;
           preErr.textContent = '';
           if (tsWatch) { clearTimeout(tsWatch); tsWatch = null; }
         },
-        'expired-callback': function () { tsToken = ''; resetTurnstile(); },
-        'timeout-callback': function () { tsToken = ''; resetTurnstile(); },
+        'expired-callback': function () { tsToken = ''; botFail('expired'); resetTurnstile(); },
+        'timeout-callback': function () { tsToken = ''; botFail('timeout'); resetTurnstile(); },
         'error-callback': function () {
           tsToken = '';
           preErr.textContent = 'The human check had a problem. Try opening this page in Safari, or tap Start chat to retry.';
+          botFail('error');
           resetTurnstile();
         }
       });
@@ -139,6 +210,7 @@
         tsWatch = null;
         if (!tsToken) {
           preErr.textContent = 'The human check is taking too long. Try opening this page in Safari.';
+          botFail('timeout');
         }
       }, 12000);
     });
@@ -185,7 +257,14 @@
       b.type = 'button';
       b.className = 'lc-chip';
       b.textContent = String(label);
-      b.addEventListener('click', function () { sendMsg(String(label)); });
+      b.addEventListener('click', function () {
+        var raw = b.textContent;
+        try {
+          var known = chipLabel(raw);
+          if (known) track('chat_chip_click', { chip_label: known });
+        } catch (e) {}
+        sendMsg(String(raw));
+      });
       wrap.appendChild(b);
     });
     logEl.appendChild(wrap);
@@ -216,10 +295,12 @@
     if (focus !== false) setTimeout(function () { (sid ? input : fName).focus(); }, 30);
   }
   function close() {
+    var dismissStarted = !panel.hidden && (sid || chatLive);
     panel.hidden = true;
     launch.setAttribute('aria-expanded', 'false');
     root.classList.remove('is-open');
     store(K_OPEN, null);
+    if (dismissStarted) trackChatEnd();
     launch.focus();
   }
   function resetToForm(note) {
@@ -233,14 +314,22 @@
   function startChat(e) {
     e.preventDefault();
     if (busy) return;
+    track('chat_form_submit');
     preErr.textContent = '';
     var name = fName.value.trim(), email = fEmail.value.trim(), phone = usPhone(fPhone.value), ok = true;
+    var invalid = [];
+    if (!validName(name)) invalid.push('invalid_name');
+    if (!validEmail(email)) invalid.push('invalid_email');
+    if (!phone) invalid.push('invalid_phone');
     fieldErr(fName, validName(name) ? '' : 'Please enter your name.'); ok = ok && validName(name);
     fieldErr(fEmail, validEmail(email) ? '' : 'Please enter a valid email address.'); ok = ok && validEmail(email);
     fieldErr(fPhone, phone ? '' : 'Please enter a valid US phone number.'); ok = ok && Boolean(phone);
-    if (!ok) { var bad = root.querySelector('[aria-invalid="true"]'); if (bad) bad.focus(); return; }
-    if (!START) { showFallback(true); return; }
-    if (TURNSTILE_SITEKEY && !tsToken) { preErr.textContent = 'Please complete the human check above.'; return; }
+    if (!ok) {
+      track('chat_form_error', { error_type: invalid.length === 1 ? invalid[0] : 'validation' });
+      var bad = root.querySelector('[aria-invalid="true"]'); if (bad) bad.focus(); return;
+    }
+    if (!START) { showFallback(true); track('chat_form_error', { error_type: 'unavailable' }); return; }
+    if (TURNSTILE_SITEKEY && !tsToken) { preErr.textContent = 'Please complete the human check above.'; track('chat_form_error', { error_type: 'bot_check_required' }); return; }
     busy = true; startBtn.disabled = true; startBtn.textContent = 'Starting…';
     fetch(START, {
       method: 'POST', mode: 'cors', credentials: 'omit', headers: { 'Content-Type': 'application/json' },
@@ -252,6 +341,10 @@
       if (res.status === 200 && j.sessionId) {
         sid = j.sessionId; store(K_SID, sid);
         history = []; if (j.greeting) history.push({ r: 'bot', t: j.greeting, s: Array.isArray(j.suggestions) ? j.suggestions : undefined }); store(K_LOG, history);
+        chatLive = true; store(K_ENDED, null); tsFailed = false;
+        // Chips are chosen after this, so the path isn't known yet.
+        track('chat_start');
+        track('generate_lead', { lead_source: 'chat', interest: 'unknown' });
         showFallback(false); showMode(); input.focus(); return;
       }
       resetTurnstile();
@@ -259,13 +352,15 @@
         if (j.fields.name) fieldErr(fName, j.fields.name);
         if (j.fields.email) fieldErr(fEmail, j.fields.email);
         if (j.fields.phone) fieldErr(fPhone, j.fields.phone);
+        track('chat_form_error', { error_type: 'invalid_fields' });
         return;
       }
-      if (j.error === 'verification_failed') { preErr.textContent = "We couldn't confirm you're human. Please try the check again."; return; }
-      if (j.error === 'too_fast') { formShownAt = Date.now() - 1000; preErr.textContent = 'Please try again in a moment.'; return; }
-      if (res.status === 429) { preErr.textContent = 'Too many chats from this connection. Please try again later.'; return; }
+      if (j.error === 'verification_failed') { preErr.textContent = "We couldn't confirm you're human. Please try the check again."; track('chat_bot_check_fail', { reason: 'verification_failed' }); return; }
+      if (j.error === 'too_fast') { formShownAt = Date.now() - 1000; preErr.textContent = 'Please try again in a moment.'; track('chat_form_error', { error_type: 'too_fast' }); return; }
+      if (res.status === 429) { preErr.textContent = 'Too many chats from this connection. Please try again later.'; track('chat_form_error', { error_type: 'rate_limited' }); return; }
       showFallback(true);
-    }).catch(function () { showFallback(true); })
+      track('chat_form_error', { error_type: FORM_ERRORS[j.error] ? j.error : 'unavailable' });
+    }).catch(function () { showFallback(true); track('chat_form_error', { error_type: 'network' }); })
       .then(function () { busy = false; startBtn.disabled = false; startBtn.textContent = 'Start chat'; });
   }
 
@@ -278,6 +373,7 @@
       } catch (e) {}
     }
     showFallback(false);
+    trackChatEnd();
     resetToForm('Chat ended. Thanks for stopping by!');
   }
 
@@ -289,6 +385,7 @@
     clearChips();
     bubble('user', text, true);
     input.value = ''; grow();
+    track('chat_message', { message_count: userMessageCount() });
     if (!API) { showFallback(true); return; }
     setBusy(true);
     var ctrl = w.AbortController ? new AbortController() : null;
@@ -303,7 +400,7 @@
     }).then(function (res) {
       var j = res.j || {};
       if (res.status === 200 && j.reply) { showFallback(false); bubble('bot', j.reply, true); if (Array.isArray(j.suggestions) && j.suggestions.length) storeSuggestions(j.suggestions); return; }
-      if (res.status === 401) { resetToForm('Your chat timed out. Please fill in the form to start a new one.'); return; }
+      if (res.status === 401) { trackChatEnd(); resetToForm('Your chat timed out. Please fill in the form to start a new one.'); return; }
       if (res.status === 429) { bubble('note', "You're sending messages quickly. Give it a minute" + (TEL ? ', or call ' + NAME + ' at ' + PHONE : '') + '.', false); return; }
       if (res.status === 413) { bubble('note', 'That message is a bit long. Could you shorten it?', false); return; }
       showFallback(true);
@@ -312,7 +409,7 @@
     }).then(function () { clearTimeout(timer); setBusy(false); });
   }
 
-  launch.addEventListener('click', function () { if (panel.hidden) open(); else close(); });
+  launch.addEventListener('click', function () { if (panel.hidden) { open(); track('chat_open'); } else close(); });
   closeBtn.addEventListener('click', close);
   endBtn.addEventListener('click', endChat);
   pre.addEventListener('submit', startChat);
@@ -326,4 +423,24 @@
 
   // Re-open across pages within the same visit if it was open.
   if (load(K_OPEN) === '1') open(false);
+
+  // Liora tap-to-call: chat panel, the Talk to Liora bar, the homepage section, and a header link.
+  // The phone number itself is not sent.
+  d.addEventListener('click', function (e) {
+    try {
+      var t = e.target;
+      if (t && t.nodeType === 3) t = t.parentElement;
+      if (!t || !t.closest) return;
+      var a = t.closest('a[href^="tel:"]');
+      if (!a) return;
+      var digits = String(a.getAttribute('href') || '').replace(/\D/g, '');
+      if (digits !== '19144916765' && digits !== '9144916765') return;
+      var loc = '';
+      if (root.contains(a)) loc = 'chat_panel';
+      else if (a.closest('.liora-bar')) loc = 'talk_bar';
+      else if (a.closest('#talk-to-liora, .liora-sec')) loc = 'talk_section';
+      else if (a.closest('header, .site-nav')) loc = 'header';
+      if (loc) track('phone_click', { link_location: loc });
+    } catch (err) {}
+  });
 })();
