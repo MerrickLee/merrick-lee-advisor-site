@@ -11,7 +11,7 @@
   // ---- config ----
   // TEMPORARY for the draft PR: Merrick's Mac via a Cloudflare quick tunnel (changes on restart).
   // Replace with the permanent server URL (Render) before this goes live.
-  var DEFAULT_URL = 'https://arkansas-tray-rep-instructor.trycloudflare.com/chat';
+  var DEFAULT_URL = 'https://liora-ava-voice-363n.onrender.com/chat';
   var TURNSTILE_SITEKEY = '0x4AAAAAAGClv7TpPcBxxfe9'; // Cloudflare Turnstile (managed) widget for merricklee.com + croesave.com + localhost
   var NAME = 'Liora', SUB = 'Merrick\'s AI assistant';
   var TEL = 'tel:+19144916765', PHONE = '(914) 491-6765', EMAIL = 'liora@merricklee.com'; // TEL '' hides the call button
