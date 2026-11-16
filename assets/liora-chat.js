@@ -85,7 +85,7 @@
   var fName = q('#lc-name'), fEmail = q('#lc-email'), fPhone = q('#lc-phone'), fHp = q('#lc-website');
 
   var sid = load(K_SID), history = load(K_LOG, true) || [], busy = false;
-  var formShownAt = 0, tsWidget = null, tsToken = '', tsLoading = false;
+  var formShownAt = 0, tsWidget = null, tsToken = '', tsLoading = false, tsWatch = null;
 
   // ---- validation (the server re-checks all of this) ----
   function usPhone(v) {
@@ -121,10 +121,26 @@
       if (tsWidget !== null || !w.turnstile) return;
       tsWidget = w.turnstile.render(tsBox, {
         sitekey: TURNSTILE_SITEKEY, theme: 'light', size: 'flexible', action: 'chat_start',
-        callback: function (t) { tsToken = t; preErr.textContent = ''; },
-        'expired-callback': function () { tsToken = ''; },
-        'error-callback': function () { tsToken = ''; }
+        callback: function (t) {
+          tsToken = t;
+          preErr.textContent = '';
+          if (tsWatch) { clearTimeout(tsWatch); tsWatch = null; }
+        },
+        'expired-callback': function () { tsToken = ''; resetTurnstile(); },
+        'timeout-callback': function () { tsToken = ''; resetTurnstile(); },
+        'error-callback': function () {
+          tsToken = '';
+          preErr.textContent = 'The human check had a problem. Try opening this page in Safari, or tap Start chat to retry.';
+          resetTurnstile();
+        }
       });
+      if (tsWatch) { clearTimeout(tsWatch); tsWatch = null; }
+      tsWatch = setTimeout(function () {
+        tsWatch = null;
+        if (!tsToken) {
+          preErr.textContent = 'The human check is taking too long. Try opening this page in Safari.';
+        }
+      }, 12000);
     });
   }
   function resetTurnstile() { tsToken = ''; try { if (w.turnstile && tsWidget !== null) w.turnstile.reset(tsWidget); } catch (e) {} }
