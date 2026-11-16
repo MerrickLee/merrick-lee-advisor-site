@@ -157,10 +157,48 @@
     logEl.scrollTop = logEl.scrollHeight;
     if (persist) { history.push({ r: role, t: text }); if (history.length > 60) history = history.slice(-60); store(K_LOG, history); }
   }
-  function render() { logEl.textContent = ''; history.forEach(function (m) { bubble(m.r, m.t, false); }); }
+  function render() {
+    logEl.textContent = '';
+    history.forEach(function (m, i) {
+      bubble(m.r, m.t, false);
+      if (m.r === 'bot' && m.s && m.s.length && i === history.length - 1) showChips(m.s);
+    });
+  }
   function showFallback(on) { fallback.hidden = !on; }
-  function setBusy(on) { busy = on; typing.hidden = !on; send.disabled = on; logEl.setAttribute('aria-busy', on ? 'true' : 'false'); }
+  function setBusy(on) {
+    busy = on; typing.hidden = !on; send.disabled = on;
+    logEl.setAttribute('aria-busy', on ? 'true' : 'false');
+    logEl.querySelectorAll('.lc-chip').forEach(function (b) { b.disabled = on; });
+  }
   function grow() { input.style.height = 'auto'; input.style.height = Math.min(input.scrollHeight, 140) + 'px'; }
+
+  function clearChips() { var el = q('.lc-chips'); if (el) el.remove(); }
+  function showChips(labels) {
+    clearChips();
+    if (!labels || !labels.length) return;
+    var wrap = d.createElement('div');
+    wrap.className = 'lc-chips';
+    wrap.setAttribute('role', 'group');
+    wrap.setAttribute('aria-label', 'Suggested replies');
+    labels.forEach(function (label) {
+      var b = d.createElement('button');
+      b.type = 'button';
+      b.className = 'lc-chip';
+      b.textContent = String(label);
+      b.addEventListener('click', function () { sendMsg(String(label)); });
+      wrap.appendChild(b);
+    });
+    logEl.appendChild(wrap);
+    logEl.scrollTop = logEl.scrollHeight;
+  }
+  function storeSuggestions(labels) {
+    if (!labels || !labels.length || !history.length) return;
+    var last = history[history.length - 1];
+    if (last.r !== 'bot') return;
+    last.s = labels;
+    store(K_LOG, history);
+    showChips(labels);
+  }
 
   function showMode() {
     var chatting = Boolean(sid);
@@ -213,7 +251,7 @@
       var j = res.j || {};
       if (res.status === 200 && j.sessionId) {
         sid = j.sessionId; store(K_SID, sid);
-        history = []; if (j.greeting) history.push({ r: 'bot', t: j.greeting }); store(K_LOG, history);
+        history = []; if (j.greeting) history.push({ r: 'bot', t: j.greeting, s: Array.isArray(j.suggestions) ? j.suggestions : undefined }); store(K_LOG, history);
         showFallback(false); showMode(); input.focus(); return;
       }
       resetTurnstile();
@@ -248,6 +286,7 @@
     text = text.replace(/\s+$/, '');
     if (!text.trim()) return;
     if (text.length > MAX) text = text.slice(0, MAX);
+    clearChips();
     bubble('user', text, true);
     input.value = ''; grow();
     if (!API) { showFallback(true); return; }
@@ -263,7 +302,7 @@
       return r.json().catch(function () { return {}; }).then(function (j) { return { status: r.status, j: j }; });
     }).then(function (res) {
       var j = res.j || {};
-      if (res.status === 200 && j.reply) { showFallback(false); bubble('bot', j.reply, true); return; }
+      if (res.status === 200 && j.reply) { showFallback(false); bubble('bot', j.reply, true); if (Array.isArray(j.suggestions) && j.suggestions.length) storeSuggestions(j.suggestions); return; }
       if (res.status === 401) { resetToForm('Your chat timed out. Please fill in the form to start a new one.'); return; }
       if (res.status === 429) { bubble('note', "You're sending messages quickly. Give it a minute" + (TEL ? ', or call ' + NAME + ' at ' + PHONE : '') + '.', false); return; }
       if (res.status === 413) { bubble('note', 'That message is a bit long. Could you shorten it?', false); return; }
