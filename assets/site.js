@@ -35,3 +35,5 @@ if(o){p.hidden=false;if(!f){f=d.createElement('iframe');f.id=ID;f.src=U;f.title=
 var s=d.createElement('script');s.src='https://link.msgsndr.com/js/form_embed.js';s.async=true;d.body.appendChild(s)}
 requestAnimationFrame(function(){requestAnimationFrame(function(){p.classList.add('open')})})}
 else{p.classList.remove('open');setTimeout(function(){if(!p.classList.contains('open'))p.hidden=true},matchMedia('(prefers-reduced-motion: reduce)').matches?0:400)}})})();
+(function(){var d=document;if(d.getElementById('lc-root')||d.querySelector('script[src="/assets/liora-chat.js"]'))return;
+var s=d.createElement('script');s.src='/assets/liora-chat.js';s.defer=true;d.body.appendChild(s)})();
