@@ -169,3 +169,15 @@ requestAnimationFrame(function(){requestAnimationFrame(function(){p.classList.ad
 else{p.classList.remove('open');setTimeout(function(){if(!p.classList.contains('open'))p.hidden=true},matchMedia('(prefers-reduced-motion: reduce)').matches?0:400)}})})();
 (function(){var d=document;if(d.getElementById('lc-root')||d.querySelector('script[src="/assets/liora-chat.js"]'))return;
 var s=d.createElement('script');s.src='/assets/liora-chat.js';s.defer=true;d.body.appendChild(s)})();
+
+(function(){var d=document,reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+var pics=d.querySelectorAll('.hero .pic img.kb');
+var n=pics.length;
+if(n<2||reduced)return;
+var slot=4,fade=0.96,cycle=n*slot;
+var pIn=(fade/cycle)*100,pHold=(slot/cycle)*100,pOut=((slot+fade)/cycle)*100,pBack=100-pIn;
+var css='.hero .pic .kb{animation-duration:'+cycle+'s}'
+  +'@keyframes kb{0%{opacity:0;transform:scale(1)}'+pIn.toFixed(3)+'%{opacity:1}'+pHold.toFixed(3)+'%{opacity:1}'+pOut.toFixed(3)+'%{opacity:0;transform:scale(1.08)}100%{opacity:0}}'
+  +'@keyframes kb1{0%{opacity:1;transform:scale(1)}'+pHold.toFixed(3)+'%{opacity:1}'+pOut.toFixed(3)+'%{opacity:0;transform:scale(1.08)}'+pBack.toFixed(3)+'%{opacity:0;transform:scale(1)}100%{opacity:1}}';
+var s=d.createElement('style');s.setAttribute('data-hero-kb','1');s.textContent=css;d.head.appendChild(s);
+for(var i=0;i<n;i++)pics[i].style.animationDelay=(i*slot)+'s'})();
