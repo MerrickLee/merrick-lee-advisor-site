@@ -1,0 +1,132 @@
+# Publishes queued Insights posts (scheduled/<item>/) once their go-live time has passed.
+# Runs on GitHub's servers, so it keeps working when no bot or computer is running.
+# How to queue a post: see scheduled/README.md.
+name: Publish scheduled posts
+
+on:
+  schedule:
+    # GitHub cron is UTC and can run 5-30+ minutes late; publish times live in each item's
+    # publish.json (America/New_York, DST-aware), so this only has to run often.
+    # Off the top of the hour, when GitHub is busiest.
+    - cron: '7,22,37,52 * * * *'
+  workflow_dispatch: {}
+  push:
+    branches: [main]
+    paths:
+      - 'scheduled/**'
+      - 'scripts/publish-scheduled.mjs'
+      - 'scripts/build-post.mjs'
+      - '.github/workflows/publish-scheduled.yml'
+  pull_request:
+    paths:
+      - 'scheduled/**'
+      - 'scripts/publish-scheduled.mjs'
+      - 'scripts/build-post.mjs'
+      - '.github/workflows/publish-scheduled.yml'
+
+permissions:
+  contents: write   # commit the published post to main
+  statuses: read    # wait for Vercel's deploy status on that commit
+
+concurrency:
+  group: publish-scheduled
+  cancel-in-progress: false
+
+jobs:
+  check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Self-test the publisher
+        run: node scripts/test-publish-scheduled.mjs
+      - name: Validate the queue
+        run: node scripts/publish-scheduled.mjs --check
+
+  publish:
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      # Vercel (Hobby) only deploys commits authored by the account owner, so publish commits
+      # use Merrick's Git identity. Override with repository variables if it ever changes.
+      GIT_AUTHOR_NAME: ${{ vars.PUBLISH_GIT_NAME || 'Merrick Lee' }}
+      GIT_AUTHOR_EMAIL: ${{ vars.PUBLISH_GIT_EMAIL || 'princemlee@aol.com' }}
+      GIT_COMMITTER_NAME: ${{ vars.PUBLISH_GIT_NAME || 'Merrick Lee' }}
+      GIT_COMMITTER_EMAIL: ${{ vars.PUBLISH_GIT_EMAIL || 'princemlee@aol.com' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Validate the queue
+        run: node scripts/publish-scheduled.mjs --check
+
+      - name: Publish due posts and push to main
+        id: publish
+        run: |
+          set -euo pipefail
+          for attempt in 1 2 3; do
+            git fetch --quiet origin main
+            git reset --quiet --hard origin/main
+            git clean -fdq
+            node scripts/publish-scheduled.mjs | tee publish.log
+            published="$(sed -n 's#^Published /insights/\(.*\)/$#\1#p' publish.log | tr '\n' ' ' | sed 's/ $//')"
+            rm -f publish.log
+            if [ -z "$(git status --porcelain)" ]; then
+              echo "Nothing to publish."
+              echo "pushed=false" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+            git add -A
+            if [ -n "$published" ]; then
+              msg="Insights: publish ${published// /, } (scheduled)"
+            else
+              msg="Insights: clean up scheduled queue"
+            fi
+            git commit --quiet -m "$msg" -m "Published automatically by .github/workflows/publish-scheduled.yml"
+            if git push --quiet origin HEAD:main; then
+              {
+                echo "pushed=true"
+                echo "sha=$(git rev-parse HEAD)"
+                echo "published=$published"
+              } >> "$GITHUB_OUTPUT"
+              echo "### Published: ${published:-queue cleanup only}" >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+            fi
+            echo "main moved while publishing (attempt $attempt); retrying on the new main."
+            sleep $((attempt * 10))
+          done
+          echo "::error::Could not push to main after 3 attempts."
+          exit 1
+
+      - name: Wait for Vercel to deploy the commit
+        if: steps.publish.outputs.pushed == 'true' && steps.publish.outputs.published != ''
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SHA: ${{ steps.publish.outputs.sha }}
+        run: |
+          set -euo pipefail
+          # Vercel reports its deploy as a commit status named "Vercel". If it never shows up, the
+          # deploy was probably blocked (e.g. commit author not recognised) -> fail so GitHub emails us.
+          for _ in $(seq 1 40); do
+            state="$(gh api "repos/${GITHUB_REPOSITORY}/commits/${SHA}/statuses" --jq '[.[] | select(.context == "Vercel")][0].state // "none"')"
+            echo "Vercel status: $state"
+            case "$state" in
+              success) echo "Live: https://merricklee.com/insights/ (${{ steps.publish.outputs.published }})" >> "$GITHUB_STEP_SUMMARY"; exit 0 ;;
+              failure|error) echo "::error::Vercel deploy failed for ${SHA}. The post is committed but NOT live."; exit 1 ;;
+            esac
+            sleep 30
+          done
+          echo "::error::No Vercel deploy status for ${SHA} after 20 minutes. The post is committed but may NOT be live."
+          exit 1

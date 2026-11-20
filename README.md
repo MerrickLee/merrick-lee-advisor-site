@@ -57,6 +57,28 @@ What the script does:
 - Regenerates the listing cards (newest first), the Blog JSON-LD and the "Related insights" block on every post. That block appears once there are two or more posts.
 - Adds the URL to `sitemap.xml` if that file exists. Otherwise it skips this step.
 
+### Scheduling a post (publishes on its own)
+
+Approved posts can be queued with a go-live time. `.github/workflows/publish-scheduled.yml` runs every 15 minutes on GitHub (no bot or computer needed), publishes anything whose time has passed and commits to `main`, and Vercel deploys it as usual. Times are New York wall-clock time; daylight saving is handled.
+
+1. Build the post as usual on a scratch copy of the site, with `date:` set to the go-live date: `node scripts/build-post.mjs draft.md`.
+2. Make a queue folder, e.g. `scheduled/2026-11-25-fractional-cmo-vs-marketing-agency/`, containing:
+   - `publish.json`: `{ "slug": "fractional-cmo-vs-marketing-agency", "publish_at": "2026-11-25T10:00", "timezone": "America/New_York" }`
+   - `files/`: only the post's own new files at their final paths: `files/insights/<slug>/index.html`, `files/img/opt/<slug>-*.webp`, `files/img/og/<slug>.jpg`. Don't include `insights/index.html`, `sitemap.xml` or other posts; those are regenerated at go-live.
+   - `edits.patch` (optional): a `git diff` for changes to pages that are already live, such as a body link from an older post to this one. It is applied at go-live and must still apply cleanly then.
+3. Check the queue: `node scripts/publish-scheduled.mjs --check` (also runs automatically on pull requests and pushes that touch `scheduled/`). `--list` shows every queued post and its go-live time in UTC.
+4. Commit the folder to `main`.
+
+Rules the publisher enforces (a broken rule fails the run, which emails the repo owner, and nothing is committed):
+- Never early: a post goes live on the first run at or after `publish_at` (in practice up to ~15–30 minutes after, because GitHub's scheduler can run late).
+- The post's `date` must equal the `publish_at` date.
+- No live page may link to a queued post, and a post can't link to one that goes live after it.
+- New files may not overwrite different existing files, and `edits.patch` must apply cleanly.
+- Running again changes nothing. If a queued post is already live (published by hand), its folder is just removed.
+- After publishing, the run waits for Vercel's deploy status on the commit and fails if the deploy fails or never starts.
+
+Test the publisher with `node scripts/test-publish-scheduled.mjs` (uses throwaway copies in `/tmp`). To publish right away instead of waiting, run the workflow manually from the Actions tab ("Run workflow"); it still publishes only what's due.
+
 ### Photo credits (Unsplash, Pexels and other sources)
 
 You can use your own photos or free stock photos. Download the file, point the draft at it, and add the credit:

@@ -1,0 +1,3 @@
+# Queued Insights posts are published by .github/workflows/publish-scheduled.yml.
+# Never serve them before go-live (vercel.json also redirects /scheduled/* to /insights/).
+scheduled

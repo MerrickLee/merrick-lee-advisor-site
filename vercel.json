@@ -38,6 +38,16 @@
   ],
   "redirects": [
     {
+      "source": "/scheduled",
+      "destination": "/insights/",
+      "permanent": false
+    },
+    {
+      "source": "/scheduled/(.*)",
+      "destination": "/insights/",
+      "permanent": false
+    },
+    {
       "source": "/digital-marketing",
       "destination": "/growth-marketing-consultant/",
       "permanent": true
