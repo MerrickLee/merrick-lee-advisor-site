@@ -105,3 +105,13 @@ html.bk-lock .lc-root{visibility:hidden;pointer-events:none}
 .lc-chip{appearance:none;-webkit-appearance:none;border:1px solid #d7d2c6;background:#fff;color:var(--ink,#14213d);border-radius:999px;padding:10px 14px;font:600 13.5px/1.3 Inter,system-ui,sans-serif;cursor:pointer;min-height:44px;text-align:left}
 .lc-chip:hover{border-color:var(--ink,#14213d);background:#fff}
 .lc-chip:disabled{opacity:.55;cursor:default}
+
+/* picture wrappers: keep the photo a grid/flex item at the same size as the img */
+.liora-panel>picture{display:block;width:280px;height:280px;max-width:100%}
+.liora-panel>picture .liora-photo{width:100%;height:100%}
+.liora-bar-link>picture{display:block;width:48px;height:48px;flex:none;border-radius:50%;overflow:hidden}
+.liora-bar-link>picture .liora-bar-av{width:100%;height:100%}
+@media(max-width:700px){
+.liora-panel>picture{width:200px;height:200px}
+.liora-bar-link>picture{width:44px;height:44px}
+}
