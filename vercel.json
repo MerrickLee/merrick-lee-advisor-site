@@ -98,6 +98,81 @@
       "permanent": true
     },
     {
+      "source": "/wordpress/digital-marketing",
+      "destination": "/growth-marketing-consultant/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/digital-marketing/",
+      "destination": "/growth-marketing-consultant/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/mobile-app-development",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/mobile-app-development/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/website-development-hosting",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/website-development-hosting/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/hello-world",
+      "destination": "/insights/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/hello-world/",
+      "destination": "/insights/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/savatree",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/savatree/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/wordpress/(.*)",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/contact-us",
+      "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/contact-us/",
+      "destination": "/",
+      "permanent": true
+    },
+    {
       "source": "/category/(.*)",
       "destination": "/insights/",
       "permanent": true
@@ -114,6 +189,16 @@
     },
     {
       "source": "/feed/",
+      "destination": "/insights/",
+      "permanent": true
+    },
+    {
+      "source": "/comments/feed",
+      "destination": "/insights/",
+      "permanent": true
+    },
+    {
+      "source": "/comments/feed/",
       "destination": "/insights/",
       "permanent": true
     },
@@ -135,6 +220,26 @@
     {
       "source": "/wp-json/(.*)",
       "destination": "/",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap.html",
+      "destination": "/sitemap.xml",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap.html/",
+      "destination": "/sitemap.xml",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap",
+      "destination": "/sitemap.xml",
+      "permanent": true
+    },
+    {
+      "source": "/sitemap/",
+      "destination": "/sitemap.xml",
       "permanent": true
     },
     {
