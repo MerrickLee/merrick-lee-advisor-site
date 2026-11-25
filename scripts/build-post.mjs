@@ -121,7 +121,7 @@ export async function shareImage({ title, kicker = 'Insights', out }) {
   const font = (f) => pathToFileURL(path.join(ROOT, 'assets/fonts', f)).href;
   const sig = dataUrl(path.join(ROOT, 'img/opt/merrick-lee-signature-600.webp'));
   const size = title.length > 80 ? 56 : title.length > 55 ? 64 : 72;
-  const html = `<html><head><meta charset="utf-8"><style>@font-face{font-family:F;src:url(${font('fraunces-latin-var.woff2')})}@font-face{font-family:I;src:url(${font('inter-latin-var.woff2')})}
+  const html = `<html><head><meta charset="utf-8"><style>@font-face{font-family:F;src:url(${font('source-serif-4-latin-var.woff2')})}@font-face{font-family:I;src:url(${font('inter-latin-var.woff2')})}
   *{margin:0;box-sizing:border-box}body{width:1200px;height:630px;overflow:hidden;font-family:I}
   .c{position:relative;background:#fbfaf7;height:630px;padding:56px 72px;border-bottom:14px solid #14213d}
   .k{font-size:20px;letter-spacing:.14em;text-transform:uppercase;font-weight:600;color:#2a7d6b}
