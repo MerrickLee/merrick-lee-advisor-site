@@ -19,7 +19,7 @@ const INS = path.join(ROOT, 'insights');
 const SERVICES = {
   'fractional-cmo': ['Fractional CMO', 'Senior growth leadership that owns the plan and the results, part time.'],
   'growth-marketing-consultant': ['Advisory Retainer', 'Ongoing strategy calls, KPI reviews and agency oversight.'],
-  'marketing-audit': ['Growth Audit', 'A fixed-scope review of your ads, analytics, funnel and CRM, with a 90-day roadmap.'],
+  'marketing-audit': ['Growth Audit', 'A fixed-scope review of your ads, analytics, funnel and CRM, with a 90‑day roadmap.'],
   'marketing-strategy-workshop': ['Marketing Strategy Workshop', 'A focused day with your leadership team on positioning, channels, budget and KPIs.'],
 };
 const args = process.argv.slice(2);

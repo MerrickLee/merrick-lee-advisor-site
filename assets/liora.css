@@ -27,7 +27,7 @@
 /* Liora chat panel (assets/liora-chat.js) */
 .lc-root{position:fixed;right:max(16px,env(safe-area-inset-right));bottom:max(16px,env(safe-area-inset-bottom));z-index:60;display:flex;flex-direction:column-reverse;align-items:flex-end;gap:12px;font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif}
 html.bk-lock .lc-root{visibility:hidden;pointer-events:none}
-.lc-launch{display:flex;align-items:center;gap:10px;background:var(--ink,#14213d);color:#fff;border:0;border-radius:999px;padding:8px 18px 8px 8px;box-shadow:0 12px 32px -8px rgba(20,33,61,.5);font:600 15px/1.2 Inter,system-ui,sans-serif;cursor:pointer;min-height:56px;transition:background .2s ease,transform .2s ease}
+.lc-launch{display:flex;align-items:center;gap:10px;background:var(--ink,#14213d);color:#fff;border:0;border-radius:999px;padding:8px;box-shadow:0 12px 32px -8px rgba(20,33,61,.5);font:600 15px/1.2 Inter,system-ui,sans-serif;cursor:pointer;min-height:56px;min-width:56px;transition:background .2s ease,transform .2s ease}
 .lc-launch:hover,.lc-launch:focus-visible{background:#0c1528;transform:translateY(-1px)}
 .lc-launch:focus-visible,.lc-x:focus-visible,.lc-send:focus-visible,.lc-call:focus-visible,.lc-end:focus-visible,.lc-chip:focus-visible,.lc-input:focus-visible,.lc-log:focus-visible{outline:3px solid var(--green,#2a7d6b);outline-offset:2px}
 .lc-launch img{width:44px;height:44px;border-radius:50%;object-fit:cover;flex:none}
@@ -64,10 +64,8 @@ html.bk-lock .lc-root{visibility:hidden;pointer-events:none}
 .lc-end{flex:none;background:transparent;border:1px solid #d7d2c6;border-radius:999px;padding:6px 12px;font:600 12.5px/1 Inter,system-ui,sans-serif;color:var(--ink,#14213d);cursor:pointer;min-height:32px}
 .lc-end:hover{border-color:var(--ink,#14213d)}
 .lc-sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-@media(max-width:700px){
 .lc-launch-text{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap}
-.lc-launch{padding:8px}
-}
+
 @media(max-width:480px){
 .lc-root.is-open{left:0;right:0;bottom:0;top:0;align-items:stretch;gap:0}
 .lc-root.is-open .lc-launch{display:none}
@@ -114,4 +112,31 @@ html.bk-lock .lc-root{visibility:hidden;pointer-events:none}
 @media(max-width:700px){
 .liora-panel>picture{width:200px;height:200px}
 .liora-bar-link>picture{width:44px;height:44px}
+}
+
+/* Reserved corner so the floating chip doesn't cover heroes or body text.
+   The chip is icon-only; "Chat with Liora" stays in the accessible name. */
+:root{
+  --lc-fab:60px;
+  --lc-gap:16px;
+  --lc-clear:12px;
+  --lc-safe-right:calc(var(--lc-fab) + var(--lc-gap) + var(--lc-clear) + env(safe-area-inset-right,0px));
+  --lc-safe-bottom:calc(var(--lc-fab) + var(--lc-gap) + var(--lc-clear) + env(safe-area-inset-bottom,0px));
+}
+body{padding-bottom:var(--lc-safe-bottom)}
+@media(min-width:701px){
+  .hero .pic,.shero .pic{margin-right:var(--lc-safe-right)}
+  .phero{padding-left:max(40px,var(--lc-safe-right));padding-right:max(40px,var(--lc-safe-right))}
+}
+@media(min-width:701px) and (max-width:1440px){
+  .wrap,.ins-wrap{padding-right:max(0px,calc(var(--lc-safe-right) - (100vw - 100%)/2))}
+  .cta,footer{padding-right:max(56px,var(--lc-safe-right))}
+}
+@media(max-width:700px){
+  .pbody,.pfaq,.psvc,.prel,.wrap,.hero .copy,.shero .copy,.v-a .ptop,
+  .ins-wrap,.cta,.liora-bar,footer,figcaption,.credit{
+    padding-right:max(20px,var(--lc-safe-right));
+  }
+  .pricetag{max-width:100%;box-sizing:border-box;white-space:normal}
+  .v-a .phero .credit,.phero figcaption.credit{padding-right:max(20px,var(--lc-safe-right))}
 }

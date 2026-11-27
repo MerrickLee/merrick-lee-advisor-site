@@ -86,7 +86,7 @@
   root.id = 'lc-root';
   root.className = 'lc-root';
   root.innerHTML =
-    '<button type="button" class="lc-launch" aria-expanded="false" aria-controls="lc-panel">' + avatar('lc-launch-av') +
+    '<button type="button" class="lc-launch" aria-expanded="false" aria-controls="lc-panel" aria-label="Chat with ' + NAME + '">' + avatar('lc-launch-av') +
       '<span class="lc-launch-text">Chat with ' + NAME + '</span></button>' +
     '<div id="lc-panel" class="lc-panel" role="dialog" aria-modal="false" aria-labelledby="lc-title" aria-describedby="lc-disclose" hidden>' +
       '<div class="lc-hd">' + avatar('lc-av') +
